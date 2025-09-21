@@ -3,25 +3,17 @@ import argparse, sys
 from rich.table import Table
 from rich.console import Console
 import os
-
 from .state import load_state, save_state
 from .league import League
 from .ilp_check import guaranteed_top4, guaranteed_safe
 from .sim import estimate_probabilities
-
-# providers & sync
-from .providers import FootballDataProvider, ApiFootballProvider  # api-football có thể không dùng
+from .providers import FootballDataProvider, ApiFootballProvider 
 from .sync import merge_finished_matches
-
-# snapshot & publish
 from .snapshot import build_snapshot, write_snapshot_file
 from .publisher import publish_file, publish_gist, publish_s3, detect_current_season_year
 
 console = Console()
 
-# -----------------------------
-# Helpers
-# -----------------------------
 def _print_table(L: League, probs_top4=None, probs_safe=None, flags_top4=None, flags_safe=None):
     tab = Table(title="Premier League Standings (Display order: Pts, GD, GF)", show_lines=False)
     tab.add_column("#", justify="right")
@@ -50,10 +42,6 @@ def _print_table(L: League, probs_top4=None, probs_safe=None, flags_top4=None, f
                     off_str, p4, ps)
     console.print(tab)
 
-
-# -----------------------------
-# Subcommands
-# -----------------------------
 def cmd_init(args):
     if args.file:
         with open(args.file, "r", encoding="utf-8") as f:
@@ -89,7 +77,6 @@ def cmd_sync(args):
     if args.provider == "football-data":
         provider = FootballDataProvider()
         if args.season is None:
-            # auto-detect mùa hiện tại
             season = detect_current_season_year()
         else:
             season = args.season
@@ -117,7 +104,6 @@ def cmd_snapshot(args):
     console.print(f"[green]Snapshot written to {args.out} (sims={args.sims}, seed={args.seed}, results={len(L.results)}).[/green]")
 
 def cmd_publish(args):
-    # (tuỳ chọn) pre-sync
     st = load_state(args.state)
     L = League.from_state(st)
     if args.with_sync:
@@ -128,12 +114,10 @@ def cmd_publish(args):
         save_state(L.to_state(), path=args.state)
         console.print(f"[yellow]Pre-sync from football-data: season={season}, added={added}[/yellow]")
 
-    # snapshot
     snap = build_snapshot(L, sims=args.sims, seed=args.seed)
     write_snapshot_file(snap, args.out)
     console.print(f"[green]Snapshot created: {args.out}[/green]")
 
-    # publish
     if args.mode == "file":
         if not args.dest:
             raise SystemExit("--dest path required for mode=file")
@@ -152,22 +136,16 @@ def cmd_publish(args):
 
     console.print(f"[cyan]Published to: {url}[/cyan]")
 
-
-# -----------------------------
-# main
-# -----------------------------
 def main(argv=None):
     p = argparse.ArgumentParser(prog="eplbot", description="EPL Top-4 & Relegation Safety Bot")
     p.add_argument("--state", default="league_state.json", help="Path to state JSON file")
     sub = p.add_subparsers()
 
-    # init
     p_init = sub.add_parser("init", help="Initialize league with 20 teams")
     p_init.add_argument("--teams", help="Comma-separated 20 team names")
     p_init.add_argument("--file", help="Text file with one team per line (20 lines)")
     p_init.set_defaults(func=cmd_init)
 
-    # result
     p_res = sub.add_parser("result", help="Record a match result")
     p_res.add_argument("--home", required=True)
     p_res.add_argument("--away", required=True)
@@ -175,27 +153,23 @@ def main(argv=None):
     p_res.add_argument("--ag", type=int, required=True)
     p_res.set_defaults(func=cmd_result)
 
-    # status
     p_stat = sub.add_parser("status", help="Show table, official flags, and probabilities")
     p_stat.add_argument("--no-sim", action="store_true", help="Skip Monte Carlo")
     p_stat.add_argument("--sims", type=int, default=20000, help="Number of simulations")
     p_stat.add_argument("--seed", type=int, default=12345, help="RNG seed for reproducibility")
     p_stat.set_defaults(func=cmd_status)
 
-    # sync
     p_sync = sub.add_parser("sync", help="Sync finished matches from a provider")
     p_sync.add_argument("--provider", choices=["football-data", "api-football"], required=True)
     p_sync.add_argument("--season", type=int, help="Season year, e.g., 2025 (if omitted for football-data, auto-detect)")
     p_sync.set_defaults(func=cmd_sync)
 
-    # snapshot
     p_snap = sub.add_parser("snapshot", help="Run simulation once and export snapshot.json")
     p_snap.add_argument("--sims", type=int, default=20000)
     p_snap.add_argument("--seed", type=int, default=12345)
     p_snap.add_argument("--out", default="snapshot.json")
     p_snap.set_defaults(func=cmd_snapshot)
 
-    # publish
     p_pub = sub.add_parser("publish", help="Run sims once, create snapshot.json, and publish it")
     p_pub.add_argument("--sims", type=int, default=20000)
     p_pub.add_argument("--seed", type=int, default=12345)
@@ -203,11 +177,8 @@ def main(argv=None):
     p_pub.add_argument("--with-sync", action="store_true", help="Pre-sync finished matches from football-data before snapshot")
     p_pub.add_argument("--season", type=int, help="Season start year; if omitted, auto-detect via football-data")
     p_pub.add_argument("--mode", choices=["file","gist","s3"], required=True)
-    # file
     p_pub.add_argument("--dest", help="Destination file path for mode=file")
-    # gist
     p_pub.add_argument("--gist-id", help="Gist ID for mode=gist (or set env GIST_ID)")
-    # s3
     p_pub.add_argument("--s3-bucket")
     p_pub.add_argument("--s3-key")
     p_pub.add_argument("--s3-region")

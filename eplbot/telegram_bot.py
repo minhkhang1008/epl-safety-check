@@ -59,13 +59,9 @@ def _refresh_snapshot_from_url():
     return obj
 
 def _format_snapshot_table(obj) -> str:
-    # tái dùng formatter bảng đẹp đã có (_format_table_text) nếu muốn
-    # ở đây build nhanh từ snapshot rows
     rows = obj.get("table", [])
     meta = obj.get("meta", {})
     dt = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(meta.get("generated_at", 0)))
-    # bạn có thể dùng _format_table_text nếu muốn đồng nhất style:
-    # nhưng vì _format_table_text cần League state, ta render đơn giản:
     def pct(x): return "-" if (x is None) else f"{100*x:>.1f}%"
     head = (
         "┌──┬────────────────────────────┬──┬──┬──┬──┬───┬───┬──┬────┬─────────┬──────┬──────┐\n"
@@ -93,7 +89,6 @@ def _state_fingerprint(st: dict) -> str:
     """Tạo fingerprint nhẹ của state để phát hiện thay đổi."""
     teams = st.get("teams", [])
     results = st.get("results", [])
-    # chỉ cần những thứ quyết định bảng/xác suất: số đội, số trận, danh sách cặp, điểm
     h = hashlib.sha256()
     h.update(str(len(teams)).encode())
     h.update(str(len(results)).encode())
@@ -169,11 +164,7 @@ async def init_pl_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     try:
         provider = FootballDataProvider()
-        # Use standings to extract canonical team names
         table = provider.standings() if season is None else provider.standings()
-        # football-data standings() in providers.py does not accept season in current impl,
-        # but active standings is fine if season ongoing. For strict season, user can edit later.
-        # We filter unique names in table order:
         teams = [row["team"] for row in table]
         # Ensure 20 teams
         teams = teams[:20]
@@ -204,14 +195,11 @@ async def result_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"Recorded: {home} {hg}-{ag} {away}")
 
 def _format_table_text(L: League, probs_top4=None, probs_safe=None, flags_top4=None, flags_safe=None) -> str:
-    # chuẩn hóa số liệu
     rows = L.table_view()
 
-    # tiện ích nhỏ
     def pct(x):
         return "-" if (x is None) else f"{100*x:>5.1f}"
 
-    # tiêu đề với box-drawing
     top =  "┌──┬────────────────────────────┬──┬──┬──┬──┬───┬───┬──┬────┬─────────┬──────┬──────┐"
     head = "│# │ Team                       │P │W │D │L │GF │GA │GD│Pts │Official │%Top4│%Safe│"
     mid =  "├──┼────────────────────────────┼──┼──┼──┼──┼───┼───┼──┼────┼─────────┼──────┼──────┤"
@@ -227,7 +215,6 @@ def _format_table_text(L: League, probs_top4=None, probs_safe=None, flags_top4=N
         p4 = pct(probs_top4.get(s.team) if probs_top4 else None)
         ps = pct(probs_safe.get(s.team)  if probs_safe  else None)
 
-        # Cột cố định: team 28 ký tự, số liệu canh phải
         line = (
             f"│{i:>2}│ {s.team:<28}│"
             f"{s.played:>2}│{s.wins:>2}│{s.draws:>2}│{s.losses:>2}│"
@@ -237,7 +224,6 @@ def _format_table_text(L: League, probs_top4=None, probs_safe=None, flags_top4=N
         lines.append(line)
     lines.append(bot)
 
-    # Gói trong <pre> để Telegram dùng monospace (giữ cột thẳng)
     return "<pre>" + "\n".join(lines) + "</pre>"
 
 async def status_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -256,7 +242,6 @@ async def status_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     txt = _format_table_text(L, probs_top4, probs_safe, flags_top4, flags_safe)
     await update.message.reply_text(txt, parse_mode=ParseMode.HTML)
 
-    # ghi cache
     meta = {
         "timestamp": int(time.time()),
         "sims": sims,

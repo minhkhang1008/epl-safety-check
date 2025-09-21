@@ -22,7 +22,6 @@ def build_snapshot(L: League, sims: int = 20000, seed: int = 12345) -> Dict[str,
             "probSafe": probs_safe.get(s.team, None),
         })
 
-    # fingerprint theo danh sách kết quả – đủ để phát hiện state thay đổi
     m = hashlib.sha256()
     for r in L.results:
         m.update(f'{r["home"]}|{r["away"]}|{r["hg"]}|{r["ag"]}'.encode())

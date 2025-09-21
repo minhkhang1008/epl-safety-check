@@ -20,7 +20,6 @@ class TeamStats:
         return self.gf - self.ga
 
 def _clean_teams(teams: List[str]) -> List[str]:
-    # Trim, drop blanks/comments, enforce uniqueness
     cleaned = []
     seen = set()
     for t in teams:
@@ -38,7 +37,7 @@ def _clean_teams(teams: List[str]) -> List[str]:
 @dataclass
 class League:
     teams: List[str]
-    results: List[Dict[str, Any]] = field(default_factory=list)  # each: {home, away, hg, ag}
+    results: List[Dict[str, Any]] = field(default_factory=list)
 
     @staticmethod
     def from_state(state: Dict[str, Any]) -> "League":
@@ -58,7 +57,6 @@ class League:
         return (home, away)
 
     def remaining_fixtures(self) -> List[Tuple[str,str]]:
-        # Every ordered pair home!=away appears exactly once in the full season (double round robin).
         played = set((r["home"], r["away"]) for r in self.results)
         rem = []
         for h in self.teams:
@@ -94,7 +92,6 @@ class League:
             raise ValueError("Unknown team name.")
         if home == away:
             raise ValueError("Home and away cannot be the same team.")
-        # Check duplicate match
         for r in self.results:
             if r["home"] == home and r["away"] == away:
                 raise ValueError("This fixture has already been recorded.")
@@ -102,11 +99,9 @@ class League:
 
     def table_view(self) -> List[TeamStats]:
         stats = self.standings()
-        # Sort by points desc, gd desc, gf desc, then team name asc (display only, no legal final tie-break claims)
         return sorted(stats.values(), key=lambda s: (-s.points, -s.gd, -s.gf, s.team))
 
     def validate_complete(self) -> bool:
-        # 380 fixtures total in double round robin 20 teams
         return len(self.results) == 380
 
     def copy(self) -> "League":

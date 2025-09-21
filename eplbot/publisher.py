@@ -1,19 +1,15 @@
-# eplbot/publisher.py
 from __future__ import annotations
 import os, json
 from typing import Optional
 import requests
 
 try:
-    import boto3  # optional, chỉ cần nếu dùng S3
+    import boto3
     _HAS_BOTO3 = True
 except Exception:
     _HAS_BOTO3 = False
 
 
-# =========================
-# football-data helpers
-# =========================
 def _fd_headers() -> dict:
     token = os.environ.get("FOOTBALL_DATA_API_KEY")
     if not token:
@@ -32,13 +28,9 @@ def detect_current_season_year() -> int:
     start = season.get("startDate")
     if start and len(start) >= 4:
         return int(start[:4])
-    # fallback nếu API đổi format
     return int(os.environ.get("EPL_DEFAULT_SEASON", "2025"))
 
 
-# =========================
-# publish destinations
-# =========================
 def publish_file(snapshot_path: str, dest_path: str) -> str:
     os.makedirs(os.path.dirname(dest_path) or ".", exist_ok=True)
     with open(snapshot_path, "rb") as src, open(dest_path, "wb") as dst:

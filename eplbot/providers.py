@@ -26,7 +26,6 @@ class FootballDataProvider:
         r = self.session.get(url, timeout=20)
         r.raise_for_status()
         data = r.json()
-        # Return list of {team, points, played, gf, ga}
         table = []
         for st in data.get("standings", []):
             if st.get("type") != "TOTAL":
@@ -89,7 +88,6 @@ class ApiFootballProvider:
         r.raise_for_status()
         data = r.json()
         table = []
-        # Navigate nested response
         for resp in data.get("response", []):
             for league in [resp.get("league")]:
                 for row in league.get("standings", [[]])[0]:
