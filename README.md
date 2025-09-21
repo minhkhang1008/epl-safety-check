@@ -24,3 +24,7 @@ Project bao gồm:
 - **Refresh Snapshot** để lấy dữ liệu mới nhất từ snapshot JSON.
 
 ---
+
+## Backend và Simulation
+
+- Xem tại [README_setup.md](https://github.com/minhkhang1008/epl-safety-check/blob/main/README_setup.md)
