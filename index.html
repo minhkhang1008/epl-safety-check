@@ -7,14 +7,14 @@
   <style>
     :root{
       --bg:#0b1020; --card:#141a34; --muted:#1a2250; --ink:#e9ecf1;
-      --line:#2a3466; --accent:#78f09b; --bad:#ff8c8c;
+      --line:#2a3466; --accent:#78f09b; --accent-ink:#0a1a10; --bad:#ff8c8c;
     }
     *{ box-sizing:border-box; }
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; background:var(--bg); color:var(--ink); }
     h1 { margin: 0 0 16px 0; }
     .card { background:var(--card); border-radius: 16px; padding:16px; margin-bottom:16px; box-shadow: 0 10px 25px rgba(0,0,0,0.25); }
     table { width:100%; border-collapse: collapse; }
-    th, td { padding:8px 10px; border-bottom:1px solid var(--line); text-align:right; }
+    th, td { padding:10px 12px; border-bottom:1px solid var(--line); text-align:right; }
     th:nth-child(2), td:nth-child(2) { text-align:left; }
     thead th { position: sticky; top: 0; background:var(--muted); z-index:1; }
     .pill { padding:2px 8px; border-radius:999px; font-size:12px; border:1px solid var(--line); white-space:nowrap; }
@@ -23,8 +23,23 @@
     .small { font-size:12px; opacity:0.85; }
     .row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
     .spacer { flex:1; }
+    .btn {
+      appearance:none; border:0; cursor:pointer; border-radius:12px;
+      padding:10px 14px; font-weight:600; transition:transform .04s ease, box-shadow .2s ease;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary {
+      background:linear-gradient(180deg, var(--accent), #53d77b);
+      color:var(--accent-ink);
+      box-shadow: 0 6px 18px rgba(120,240,155,0.25);
+    }
+    .btn-primary:disabled { opacity:.6; cursor:not-allowed; }
+    .btn-ghost {
+      background:#0f1530; color:var(--ink); border:1px solid var(--line);
+    }
+    a.btn { text-decoration:none; display:inline-block; }
     @media (max-width: 640px){
-      th, td { font-size: 14px; }
+      th, td { font-size: 14px; padding:8px 10px; }
     }
   </style>
 </head>
@@ -33,11 +48,10 @@
 
   <div class="card">
     <div class="row">
-      <button id="btnRefresh">Refresh Snapshot</button>
-      <div id="snapInfo" class="small"></div>
+      <button id="btnRefresh" class="btn btn-primary">Refresh Snapshot</button>
+      <a id="gistLink" class="btn btn-ghost" href="#" target="_blank" rel="noopener">Open snapshot source</a>
       <div class="spacer"></div>
-      <!-- link tới Gist để tiện kiểm tra -->
-      <a id="gistLink" href="#" target="_blank" class="small">Open snapshot source</a>
+      <div id="snapInfo" class="small"></div>
     </div>
   </div>
 
@@ -54,11 +68,6 @@
         <tbody></tbody>
       </table>
     </div>
-
-    <div style="margin-top:12px;">
-      <h4 style="margin:0 0 6px 0;">Remaining fixtures</h4>
-      <div id="fixtures" class="small">—</div>
-    </div>
   </div>
 
   <script>
@@ -74,7 +83,7 @@
       const dt = new Date((meta.generated_at || 0) * 1000).toLocaleString();
       return `sims=${meta.sims}, seed=${meta.seed}, results=${meta.results_count}, at ${dt}`;
     }
-    function renderTable(rows, remaining){
+    function renderTable(rows){
       const tbody = $("table").querySelector("tbody");
       tbody.innerHTML = "";
       for(const r of rows){
@@ -90,32 +99,27 @@
         `;
         tbody.appendChild(tr);
       }
-      const fx = remaining || [];
-      const list = fx.slice(0, 30).map(([h,a])=>`• ${h} vs ${a}`).join("<br>");
-      $("fixtures").innerHTML = fx.length ? list + (fx.length>30 ? `<br>... (${fx.length-30} more)` : "") : "No remaining fixtures.";
     }
 
     async function fetchSnapshot(){
-      const url = SNAPSHOT_URL + (SNAPSHOT_URL.includes("?") ? "&" : "?") + "t=" + Date.now();
+      const url = SNAPSHOT_URL + (SNAPSHOT_URL.includes("?") ? "&" : "?") + "t=" + Date.now(); // cache-bust
       const r = await fetch(url, { cache: "no-store" });
-      if(!r.ok){
-        throw new Error("Fetch snapshot failed: " + r.status + " " + r.statusText);
-      }
+      if(!r.ok) throw new Error("Fetch snapshot failed: " + r.status + " " + r.statusText);
       return r.json();
     }
 
     async function refreshSnapshot(){
       try{
-        $("btnRefresh").disabled = true;
-        $("btnRefresh").textContent = "Refreshing...";
+        const btn = $("btnRefresh");
+        btn.disabled = true; btn.textContent = "Refreshing...";
         const obj = await fetchSnapshot();
         $("snapInfo").textContent = metaText(obj.meta);
-        renderTable(obj.table || [], obj.remaining || []);
+        renderTable(obj.table || []);
       }catch(e){
         $("snapInfo").textContent = "Snapshot error: " + e.message;
       }finally{
-        $("btnRefresh").disabled = false;
-        $("btnRefresh").textContent = "Refresh Snapshot";
+        const btn = $("btnRefresh");
+        btn.disabled = false; btn.textContent = "Refresh Snapshot";
       }
     }
 
