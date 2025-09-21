@@ -1,0 +1,127 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EPL Snapshot Dashboard</title>
+  <style>
+    :root{
+      --bg:#0b1020; --card:#141a34; --muted:#1a2250; --ink:#e9ecf1;
+      --line:#2a3466; --accent:#78f09b; --bad:#ff8c8c;
+    }
+    *{ box-sizing:border-box; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; background:var(--bg); color:var(--ink); }
+    h1 { margin: 0 0 16px 0; }
+    .card { background:var(--card); border-radius: 16px; padding:16px; margin-bottom:16px; box-shadow: 0 10px 25px rgba(0,0,0,0.25); }
+    table { width:100%; border-collapse: collapse; }
+    th, td { padding:8px 10px; border-bottom:1px solid var(--line); text-align:right; }
+    th:nth-child(2), td:nth-child(2) { text-align:left; }
+    thead th { position: sticky; top: 0; background:var(--muted); z-index:1; }
+    .pill { padding:2px 8px; border-radius:999px; font-size:12px; border:1px solid var(--line); white-space:nowrap; }
+    .ok { color:var(--accent); border-color:var(--accent); }
+    .bad { color:var(--bad); border-color:var(--bad); }
+    .small { font-size:12px; opacity:0.85; }
+    .row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+    .spacer { flex:1; }
+    @media (max-width: 640px){
+      th, td { font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <h1>⚽ EPL Snapshot Dashboard</h1>
+
+  <div class="card">
+    <div class="row">
+      <button id="btnRefresh">Refresh Snapshot</button>
+      <div id="snapInfo" class="small"></div>
+      <div class="spacer"></div>
+      <!-- link tới Gist để tiện kiểm tra -->
+      <a id="gistLink" href="#" target="_blank" class="small">Open snapshot source</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin:0 0 8px 0;">Table & Probabilities</h3>
+    <div style="margin-top:8px;">
+      <table id="table">
+        <thead>
+          <tr>
+            <th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th>
+            <th>GF</th><th>GA</th><th>GD</th><th>Pts</th><th>Official</th><th>%Top4</th><th>%Safe</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div style="margin-top:12px;">
+      <h4 style="margin:0 0 6px 0;">Remaining fixtures</h4>
+      <div id="fixtures" class="small">—</div>
+    </div>
+  </div>
+
+  <script>
+    const SNAPSHOT_URL = "https://gist.githubusercontent.com/minhkhang1008/19b310fe9bd41eddf209faf336785c98/raw/ecbb6715c3189f10b241e172c6d6ddd63d1f94d7/snapshot.json";
+
+    const $ = (id) => document.getElementById(id);
+    function badge(val, goodText, badText){
+      return val ? `<span class="pill ok">${goodText}</span>` : `<span class="pill bad">${badText}</span>`;
+    }
+    function pct(x){ return (x===null || x===undefined) ? "-" : (100*x).toFixed(1) + "%"; }
+    function metaText(meta){
+      if(!meta) return "";
+      const dt = new Date((meta.generated_at || 0) * 1000).toLocaleString();
+      return `sims=${meta.sims}, seed=${meta.seed}, results=${meta.results_count}, at ${dt}`;
+    }
+    function renderTable(rows, remaining){
+      const tbody = $("table").querySelector("tbody");
+      tbody.innerHTML = "";
+      for(const r of rows){
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${r.rank}</td>
+          <td style="text-align:left">${r.team}</td>
+          <td>${r.played}</td><td>${r.wins}</td><td>${r.draws}</td><td>${r.losses}</td>
+          <td>${r.gf}</td><td>${r.ga}</td><td>${r.gd}</td><td>${r.points}</td>
+          <td>${badge(r.official?.top4, "CL", "—")} ${badge(r.official?.safe, "Safe", "—")}</td>
+          <td>${pct(r.probTop4)}</td>
+          <td>${pct(r.probSafe)}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+      const fx = remaining || [];
+      const list = fx.slice(0, 30).map(([h,a])=>`• ${h} vs ${a}`).join("<br>");
+      $("fixtures").innerHTML = fx.length ? list + (fx.length>30 ? `<br>... (${fx.length-30} more)` : "") : "No remaining fixtures.";
+    }
+
+    async function fetchSnapshot(){
+      const url = SNAPSHOT_URL + (SNAPSHOT_URL.includes("?") ? "&" : "?") + "t=" + Date.now();
+      const r = await fetch(url, { cache: "no-store" });
+      if(!r.ok){
+        throw new Error("Fetch snapshot failed: " + r.status + " " + r.statusText);
+      }
+      return r.json();
+    }
+
+    async function refreshSnapshot(){
+      try{
+        $("btnRefresh").disabled = true;
+        $("btnRefresh").textContent = "Refreshing...";
+        const obj = await fetchSnapshot();
+        $("snapInfo").textContent = metaText(obj.meta);
+        renderTable(obj.table || [], obj.remaining || []);
+      }catch(e){
+        $("snapInfo").textContent = "Snapshot error: " + e.message;
+      }finally{
+        $("btnRefresh").disabled = false;
+        $("btnRefresh").textContent = "Refresh Snapshot";
+      }
+    }
+
+    $("btnRefresh").addEventListener("click", refreshSnapshot);
+    $("gistLink").href = SNAPSHOT_URL;
+    refreshSnapshot().catch(()=>{});
+  </script>
+</body>
+</html>
