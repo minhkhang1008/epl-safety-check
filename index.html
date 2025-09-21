@@ -3,7 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>EPL Snapshot Dashboard</title>
+  <title>EPL Safety check</title>
+  <link rel="icon" type="image/png" href="logo.png">
+
   <style>
     :root{
       --bg:#0b1020; --card:#141a34; --muted:#1a2250; --ink:#e9ecf1;
@@ -44,12 +46,13 @@
   </style>
 </head>
 <body>
-  <h1>⚽ EPL Snapshot Dashboard</h1>
+  <h1>⚽ Premier League Safety Check</h1>
 
   <div class="card">
     <div class="row">
       <button id="btnRefresh" class="btn btn-primary">Refresh Snapshot</button>
       <a id="gistLink" class="btn btn-ghost" href="#" target="_blank" rel="noopener">Open snapshot source</a>
+      <a id="githubLink" class="btn btn-ghost" href="https://github.com/minhkhang1008/epl-safety-check" target="_blank" rel="noopener">Open Github Repository</a>
       <div class="spacer"></div>
       <div id="snapInfo" class="small"></div>
     </div>
@@ -104,7 +107,7 @@
     }
 
     async function fetchSnapshot(){
-      const url = SNAPSHOT_URL + (SNAPSHOT_URL.includes("?") ? "&" : "?") + "t=" + Date.now(); // cache-bust
+      const url = SNAPSHOT_URL + (SNAPSHOT_URL.includes("?") ? "&" : "?") + "t=" + Date.now();
       const r = await fetch(url, { cache: "no-store" });
       if(!r.ok) throw new Error("Fetch snapshot failed: " + r.status + " " + r.statusText);
       return r.json();
