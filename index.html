@@ -79,9 +79,12 @@
     function pct(x){ return (x===null || x===undefined) ? "-" : (100*x).toFixed(1) + "%"; }
     function metaText(meta){
       if(!meta) return "";
-      const dt = new Date((meta.generated_at || 0) * 1000).toLocaleString();
-      return `sims=${meta.sims}, seed=${meta.seed}, results=${meta.results_count}, at ${dt}`;
+      const ts = (meta.generated_at || 0) * 1000;
+      const dtUTC = new Date(ts).toLocaleString('en-GB', { timeZone: 'UTC', hour12: false });
+      const dtVN  = new Date(ts).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour12: false });
+      return `sims=${meta.sims}, seed=${meta.seed}, results=${meta.results_count}, at ${dtVN} (VN) / ${dtUTC} (UTC)`;
     }
+
     function renderTable(rows){
       const tbody = $("table").querySelector("tbody");
       tbody.innerHTML = "";
