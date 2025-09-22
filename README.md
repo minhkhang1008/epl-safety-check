@@ -25,6 +25,6 @@ Project bao gồm:
 
 ---
 
-## Backend và Simulation
+## Setup
 
 - Xem tại [README_setup.md](https://github.com/minhkhang1008/epl-safety-check/blob/main/README_setup.md)

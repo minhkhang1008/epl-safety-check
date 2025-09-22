@@ -45,15 +45,17 @@ pip install -r requirements.txt
 
 ## 🧰 CLI chính (state & tính toán)
 
-**1) Khởi tạo 20 đội** (nếu không lấy từ provider)
+**1) Khởi tạo 20 đội** (từ file cá nhân)
 
 ```bash
-python -m eplbot.cli init --file <team_names_file.txt>
+python -m eplbot.cli init --file teams_pl_2025.txt
 # hoặc
 python -m eplbot.cli init --teams "Team1,Team2,...,Team20"
 ```
+{Lưu ý: Nếu tự khởi tạo đội từ file cá nhân, tên đội cần phải đúng hoàn toàn với tên đội so với trên api football-data nếu muốn đồng bộ dữ liệu từ bên đó.
+File [teams_pl_2025.txt](https://github.com/minhkhang1008/epl-safety-check/blob/main/teams_pl_2025.txt) đã được để sẵn nếu cần}
 
-**2) Ghi một kết quả trận đấu**
+**2) Ghi tay một kết quả trận đấu**
 
 ```bash
 python -m eplbot.cli result --home "Arsenal" --away "Chelsea" --hg 2 --ag 1
@@ -84,7 +86,7 @@ export FOOTBALL_DATA_API_KEY="YOUR_API_KEY"
 ```
 Xem thêm tại [README_INTEGRATIONS.md](https://github.com/minhkhang1008/epl-safety-check/blob/main/README_INTEGRATIONS.md)
 
-Sync về state (tự nhận diện mùa hiện tại):
+Sync về state:
 
 ```bash
 python -m eplbot.cli sync --provider football-data --season 2025
